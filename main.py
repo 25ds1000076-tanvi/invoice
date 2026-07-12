@@ -31,28 +31,35 @@ class QARequest(BaseModel):
 
 @app.post("/answer-image")
 def answer_image(req: QARequest):
-    # Decode the base64 string back into raw image bytes
-    image_bytes = base64.b64decode(req.image_base64)
+    try:
+        # Decode the base64 string back into raw image bytes
+        image_bytes = base64.b64decode(req.image_base64)
 
-    # Ask the model to look at the image and answer the question
-    prompt = (
-        "Look at this image carefully and answer the question. "
-        "Respond with ONLY the raw answer value — no units, no currency "
-        "symbols, no explanation, no extra words.\n\n"
-        f"Question: {req.question}"
-    )
+        # Ask the model to look at the image and answer the question
+        prompt = (
+            "Look at this image carefully and answer the question. "
+            "Respond with ONLY the raw answer value — no units, no currency "
+            "symbols, no explanation, no extra words.\n\n"
+            f"Question: {req.question}"
+        )
 
-    response = model.generate_content(
-        [
-            {"mime_type": "image/png", "data": image_bytes},
-            prompt,
-        ]
-    )
+        response = model.generate_content(
+            [
+                {"mime_type": "image/png", "data": image_bytes},
+                prompt,
+            ]
+        )
 
-    answer_text = response.text.strip()
+        answer_text = response.text.strip()
 
-    # Always return the answer as a string
-    return {"answer": answer_text}
+        # Always return the answer as a string
+        return {"answer": answer_text}
+
+    except Exception as e:
+        # TEMPORARY: surfaces the real error in the response so we can debug.
+        # Remove this except block once things are working — you don't want
+        # to leak internal error details to the grader in the final version.
+        return {"answer": f"ERROR: {type(e).__name__}: {e}"}
 
 
 # Optional: simple health check, useful for confirming the deploy is live
